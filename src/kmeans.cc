@@ -1,33 +1,11 @@
-#include "../include/kmeans.hpp"
+#include <kmeans.hpp>
 #include <numeric>
 #include <limits>
 #include <algorithm>
 #include <iostream>
 #include <omp.h>
-
-class array2d{
-public:
-  array2d(long  row, long  col, double*buf)
-    :_nrow{row},_ncol{col},_buf{buf}{}
-  long  nrow()const{return _nrow;}
-  long  ncol()const{return _ncol;}
-  double* operator[](size_t i){
-    return _buf+i*_ncol;
-  }
-
-private:
-    long  _nrow;
-    long  _ncol;
-    double *_buf;
-};
-
-
-array2d npToCpp(denseArray ndarray){ 
-  py::buffer_info info = ndarray.request();
-  assert(info.ndim==2);
-  array2d data{info.shape[0],info.shape[1], static_cast<double*>(info.ptr)};
-  return data;
-}
+#include <vector>
+#include <math.h>
 
 
 void addVec(double* p1, double *p2, long dim){ 
@@ -56,20 +34,18 @@ double* raw(std::vector<double>&vec){
 
 
 
-double sequentialKmeans(denseArray ndarray, int k, double epsilon, int maxIteration, bool verbose){ 
+
+
+double kmeans(dataSetPtr& data, int k, double epsilon, int maxIter, bool verbose){ 
+
 
   srand(0);
-  array2d data = npToCpp(ndarray);
-  long numOfData = data.nrow();
-  long dim = data.ncol();
-
+  long numOfData = data._dataNum;
+  long dim = data._dataDim;
   if(verbose){
     std::cout<<"num of data:"<<numOfData<<"\n";
     std::cout<<"num of dim:"<<dim<<"\n";
   }
-
-
-
   //init
   std::vector<std::vector<double>>clusters(k, std::vector<double>(dim));
   for(long c = 0; c < k; ++c){
@@ -89,10 +65,9 @@ double sequentialKmeans(denseArray ndarray, int k, double epsilon, int maxIterat
   int iters = 0;
   std::vector<std::vector<double>>squareDistances(numOfData, std::vector<double>(k,0));
   double inertia = - 1;
-  while(difference > epsilon && iters<maxIteration){
+  while(difference > epsilon && iters<maxIter){
 
 
-    #pragma omp parallel for num_threads(4)
     for(long i = 0; i < numOfData; i++){ 
       for(int c = 0; c < k;++c){ 
           squareDistances[i][c] = squareDistance(data[i], raw(clusters[c]), 0, dim);
@@ -150,6 +125,8 @@ double sequentialKmeans(denseArray ndarray, int k, double epsilon, int maxIterat
 
   }
   return inertia;
+
+
 }
 
 

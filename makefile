@@ -1,20 +1,20 @@
-
-kmeans: src/kmeans.cc include/kmeans.hpp
+build/kmeans.o: src/kmeans.cc include/kmeans.hpp
 	mkdir -p build
-	g++ -lpthread -fopenmp -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` src/kmeans.cc -o build/kmeans`python3-config --extension-suffix`
+	g++ -O3  -std=c++11 src/kmeans.cc -I./include -c -o build/kmeans.o -fPIC
+
+build/kmeans.so: build/kmeans.o
+	mkdir -p build
+	g++ -lpthread -fopenmp -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` -I./include src/pythonKmeans.cc build/kmeans.o  -o build/kmeans`python3-config --extension-suffix` 
 
 build/loadMnist.o: src/loadMnist.cc  include/loadMnist.hpp
+	mkdir -p build
 	g++  src/loadMnist.cc -I./include/ -c -o build/loadMnist.o
 
-mnistTest: build/loadMnist.o  test/mnistTest.cc
+mnistTest: test/mnistTest.cc build/loadMnist.o   build/kmeans.o
 	g++  $^ -I./include/  -o build/mnistTest
 	./build/mnistTest
 
-numpyToCPP: src/numpyToCPP.cc include/numpyToCPP.hpp
-	mkdir -p build
-	g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` src/numpyToCPP.cc -o build/numpyToCPP`python3-config --extension-suffix`
-
-runtest:
+runtest:build/kmeans.so
 	PYTHONPATH=build pytest test/kmeansTest.py
 
 

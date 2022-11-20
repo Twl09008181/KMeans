@@ -6,17 +6,53 @@
 namespace py=pybind11;
 using denseArray = py::array_t<double, py::array::c_style | py::array::forcecast>;
 
-dataSetPtr npToCpp(denseArray ndarray){ 
-  py::buffer_info info = ndarray.request();
-  assert(info.ndim==2);
-  dataSetPtr data{info.shape[0],info.shape[1], static_cast<double*>(info.ptr)};
-  return data;
-}
+class kmeansForPy{
+public:
+  kmeansForPy(int k,int maxIter, double tol, bool verbose)
+    :kmeansEngine{k,maxIter,tol,verbose}
+  {
+  }
 
-double kmeansForPy(denseArray ndarray, int k, double epsilon=1e-4, int maxIteration=300, bool verbose=false){
-  dataSetPtr data = npToCpp(ndarray);
-  return kmeans(data, k, epsilon, maxIteration, verbose);
-}
+  // init cluster constructor
+  kmeansForPy(int k, denseArray initCluster, int maxIter, double tol, bool verbose)
+    :kmeansForPy{k,maxIter,tol,verbose}
+  {
+    py::buffer_info info = initCluster.request();
+    assert(info.ndim==2);
+    assert(k==info.shape[0]);
+    std::vector<std::vector<double>>initC(k, std::vector<double>(info.shape[1]));
+    double* buf = static_cast<double*>(info.ptr);
+    for(int i = 0; i < k; i++){
+      for(long dim = 0; dim < info.shape[1]; ++dim){
+        initC[i][dim] = buf[i*info.shape[1]+dim];
+      }
+    }
+    kmeansEngine._initCluster = initC;
+  }
+  void fit(denseArray ds){
+    dataSetPtr dsptr = npToCpp(ds);
+    kmeansEngine.fit(dsptr);
+  }
+  double inertia(){return kmeansEngine._inertia;};
+private:
+  kmeans kmeansEngine;
+
+  dataSetPtr npToCpp(denseArray ndarray){ 
+    py::buffer_info info = ndarray.request();
+    assert(info.ndim==2);
+    dataSetPtr data{info.shape[0],info.shape[1], static_cast<double*>(info.ptr)};
+    return data;
+  }
+};
+
+
+
+
 PYBIND11_MODULE(kmeans, m) {
-  m.def("seqKmeans", &kmeansForPy,"sequential version of kmeans");
+  m.doc() = "kmeans";
+  pybind11::class_<kmeansForPy>(m, "kmeans")
+      .def(pybind11::init<size_t, size_t, double, bool>())
+      .def(pybind11::init<size_t, denseArray, size_t, double, double>())
+      .def("fit", &kmeansForPy::fit).
+      def_property("inertia_", &kmeansForPy::inertia, nullptr);
 } 

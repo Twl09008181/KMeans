@@ -1,5 +1,6 @@
 #ifndef KMEANS_HPP
 #define KMEANS_HPP
+#include <vector>
 
 class dataSetPtr{
 public:
@@ -18,7 +19,26 @@ public:
   double* _dataBuf;
 };
 
+class kmeans{
+public:
+  kmeans(int n_clusters, int maxIter=300, double tol=1e-4, bool verbose=false)
+    :
+    _n_clusters{n_clusters},
+    _maxIter{maxIter},
+    _tol{tol},
+    _verbose{verbose},
+    _inertia{-1}
+  {}
 
-double kmeans(dataSetPtr& ds, int k, double epsilon=1e-4, int maxIter=300, bool verbose=false);
+  void fit(dataSetPtr& ds);
+  int _n_clusters;
+  int _maxIter;
+  double _tol;
+  bool _verbose;
+  double _inertia;
+  std::vector<std::vector<double>>_initCluster;
+private:
+  std::vector<std::vector<double>>init(dataSetPtr&ds);
+};
 
 #endif

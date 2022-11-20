@@ -33,39 +33,46 @@ double* raw(std::vector<double>&vec){
 }
 
 
+std::vector<std::vector<double>>kmeans::init(dataSetPtr&ds){
+  if(_initCluster.empty()){
+    srand(0);
+    long numOfData = ds._dataNum;
+    long dim = ds._dataDim;
+    _initCluster.resize(_n_clusters, std::vector<double>(dim));
+    for(long c = 0; c < _n_clusters; ++c){
+      int i = rand() % numOfData;
+      if(_verbose){
+        std::cout<<"\n Initialization cluster "<<c<<" : \n";
+      }
+      for(long d = 0; d < dim; d++){
+        _initCluster[c][d] = ds[i][d];
+        if(_verbose){
+          std::cout<<_initCluster[c][d]<<" ";
+        }
+      }
+    }
+  }
+  return _initCluster;
+}
 
 
 
-double kmeans(dataSetPtr& data, int k, double epsilon, int maxIter, bool verbose){ 
+void kmeans::fit(dataSetPtr& data){ 
 
 
-  srand(0);
+  long k = _n_clusters;
   long numOfData = data._dataNum;
   long dim = data._dataDim;
-  if(verbose){
+  if(_verbose){
     std::cout<<"num of data:"<<numOfData<<"\n";
     std::cout<<"num of dim:"<<dim<<"\n";
   }
   //init
-  std::vector<std::vector<double>>clusters(k, std::vector<double>(dim));
-  for(long c = 0; c < k; ++c){
-    int i = rand() % numOfData;
-
-    if(verbose){
-      std::cout<<"\n Initialization cluster "<<c<<" : \n";
-    }
-    for(long d = 0; d < dim; d++){
-      clusters[c][d] = data[i][d];
-      if(verbose){
-        std::cout<<clusters[c][d]<<" ";
-      }
-    }
-  }
+  std::vector<std::vector<double>>clusters = init(data);
   double difference = std::numeric_limits<double>::max();
   int iters = 0;
   std::vector<std::vector<double>>squareDistances(numOfData, std::vector<double>(k,0));
-  double inertia = - 1;
-  while(difference > epsilon && iters<maxIter){
+  while(difference > _tol && iters<_maxIter){
 
 
     for(long i = 0; i < numOfData; i++){ 
@@ -76,7 +83,7 @@ double kmeans(dataSetPtr& data, int k, double epsilon, int maxIter, bool verbose
 
     std::vector<std::vector<double>>nextClusters(k, std::vector<double>(dim,0));
     std::vector<long>clusterSize(k,0);
-    inertia = 0;
+    _inertia = 0;
     //assign data to closet cluster.
     for(long i = 0; i < numOfData; i++){
       long closet=0;
@@ -89,13 +96,13 @@ double kmeans(dataSetPtr& data, int k, double epsilon, int maxIter, bool verbose
       }
       addVec(raw(nextClusters[closet]), data[i], dim);
       clusterSize[closet]++;
-      inertia += minimumDist;
+      _inertia += minimumDist;
     }
 
 
 
-    if(verbose){
-      std::cout<<"\nIteration "<<iters<<", inertia "<<inertia<<".\n";
+    if(_verbose){
+      std::cout<<"\nIteration "<<iters<<", inertia "<<_inertia<<".\n";
     }
 
     //update clusters
@@ -113,7 +120,7 @@ double kmeans(dataSetPtr& data, int k, double epsilon, int maxIter, bool verbose
     iters++;
   }
 
-  if(verbose){
+  if(_verbose){
     std::cout<<"Iterations:"<<iters<<"\n";
     for(long c = 0; c < k; ++c){
       std::cout<<"cluster"<<c<<":\n";
@@ -121,12 +128,9 @@ double kmeans(dataSetPtr& data, int k, double epsilon, int maxIter, bool verbose
         std::cout<<clusters[c][d]<<" ";
       std::cout<<"\n";
     }
-    std::cout<<"inertia:"<<inertia<<"\n";
+    std::cout<<"inertia:"<<_inertia<<"\n";
 
   }
-  return inertia;
-
-
 }
 
 

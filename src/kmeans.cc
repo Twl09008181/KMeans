@@ -19,6 +19,9 @@ void addVecSIMD(double* v1, double *v2, long N){
     __m256d addBuffer = _mm256_add_pd(p1, p2);
     _mm256_store_pd(v1+i, addBuffer);
   }
+  for(;i < N;i++){
+    v1[i] += v2[i];
+  }
 }
 
 void addVec(double* p1, double *p2, long dim){ 
@@ -228,14 +231,25 @@ void kmeans::fit(dataSetPtr& ds){
   double difference = std::numeric_limits<double>::max();
   int iters = 0;
   std::vector<std::vector<double>>squareDistances(numOfData, std::vector<double>(k,0));
+  if(_verbose){
+    std::cout<<"Iterations:"<<iters<<"\n";
+    for(long c = 0; c < k; ++c){
+      std::cout<<"cluster"<<c<<":\n";
+      for(long d = 0; d < dim; d++)
+        std::cout<<clusters[c][d]<<" ";
+      std::cout<<"\n";
+    }
+    std::cout<<"inertia:"<<_inertia<<"\n";
+
+  }
   while(difference > _tol && iters<_maxIter){
 
 
     //#pragma omp parallel for
     for(long i = 0; i < numOfData; i++){ 
       for(int c = 0; c < k;++c){ 
-          squareDistances[i][c] = squareDistanceSIMD(raw(data[i]), raw(clusters[c]), dim);
-          //squareDistances[i][c] = squareDistance(raw(data[i]), raw(clusters[c]), 0, dim);
+          //squareDistances[i][c] = squareDistanceSIMD(raw(data[i]), raw(clusters[c]), dim);
+          squareDistances[i][c] = squareDistance(raw(data[i]), raw(clusters[c]), 0, dim);
       }
     }
 
@@ -253,6 +267,7 @@ void kmeans::fit(dataSetPtr& ds){
         }
       }
       addVecSIMD(raw(nextClusters[closet]), raw(data[i]), dim);
+      //addVec(raw(nextClusters[closet]), raw(data[i]), dim);
       clusterSize[closet]++;
       _inertia += minimumDist;
     }

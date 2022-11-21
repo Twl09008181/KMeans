@@ -1,6 +1,7 @@
 #ifndef KMEANS_HPP
 #define KMEANS_HPP
 #include <vector>
+#include <alignedAllocator.hpp>
 
 class dataSetPtr{
 public:
@@ -36,9 +37,10 @@ public:
   double _tol;
   bool _verbose;
   double _inertia;
-  std::vector<std::vector<double>>_initCluster;
+  std::vector<alignedVector>_initCluster;
 private:
-  std::vector<std::vector<double>>init(dataSetPtr&ds);
+  //std::vector<std::vector<double>>init(dataSetPtr&ds);
+  std::vector<alignedVector>init(std::vector<alignedVector>&ds);
 };
 
 #endif

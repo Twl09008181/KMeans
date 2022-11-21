@@ -11,7 +11,7 @@ build/loadMnist.o: src/loadMnist.cc  include/loadMnist.hpp
 	g++  src/loadMnist.cc -I./include/ -c -o build/loadMnist.o
 
 mnistTest: test/mnistTest.cc build/loadMnist.o   build/kmeans.o
-	g++  $^ -I./include/  -o build/mnistTest -lpthread -fopenmp -O3
+	g++  $^ -I./include/  -o build/mnistTest -lpthread -fopenmp -O3 -march=native
 	./build/mnistTest
 
 runtest:build/kmeans.so

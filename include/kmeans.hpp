@@ -22,13 +22,14 @@ public:
 
 class kmeans{
 public:
-  kmeans(int n_clusters, int maxIter=300, double tol=1e-4, bool verbose=false)
+  kmeans(int n_clusters, int maxIter=300, double tol=1e-4, bool verbose=false, bool simd=false)
     :
     _n_clusters{n_clusters},
     _maxIter{maxIter},
     _tol{tol},
     _verbose{verbose},
-    _inertia{-1}
+    _inertia{-1},
+    _simd{simd}
   {}
 
   void fit(dataSetPtr& ds);
@@ -37,9 +38,12 @@ public:
   double _tol;
   bool _verbose;
   double _inertia;
+  bool _simd;
   std::vector<alignedVector>_initCluster;
 private:
-  //std::vector<std::vector<double>>init(dataSetPtr&ds);
+  void naiveFit(dataSetPtr& ds);
+  void SIMDFit(dataSetPtr& ds);
+  std::vector<alignedVector>init(dataSetPtr&ds);
   std::vector<alignedVector>init(std::vector<alignedVector>&ds);
 };
 

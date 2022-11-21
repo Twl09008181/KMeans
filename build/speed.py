@@ -53,13 +53,19 @@ def test_digits_speed():
     e1 = perf_counter()
 
     s2 = perf_counter()
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     e2 = perf_counter()
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True)
+    s3 = perf_counter()
+    mykmeans.fit(x)
+    myloss = mykmeans.inertia_
+    e3 = perf_counter()
 
-    print(e1-s1)
-    print(e2-s2)
+    print("sklearn:",e1-s1)
+    print("non-simd",e2-s2)
+    print("simd",e3-s3)
 
 def test_digits_mnist_speed():
     x, initCluster, max_iter = digits_setup_mnist()
@@ -68,12 +74,19 @@ def test_digits_mnist_speed():
     kmeans.fit(x) 
     sklearn_loss = kmeans.inertia_
     e1 = perf_counter()
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False)
     s2 = perf_counter()
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     e2 = perf_counter()
-    print(e1-s1)
-    print(e2-s2)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True)
+    s3 = perf_counter()
+    mykmeans.fit(x)
+    myloss = mykmeans.inertia_
+    e3 = perf_counter()
+    print("sklearn:",e1-s1)
+    print("non-simd",e2-s2)
+    print("simd",e3-s3)
+
 test_digits_speed()
 test_digits_mnist_speed()

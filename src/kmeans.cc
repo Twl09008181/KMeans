@@ -41,19 +41,40 @@ void scaling(double* p1, double scale, long dim){
 //simd
 double squareDistanceSIMD(double *v1, double *v2, long N){
 
-  __m256d sumBuffer = _mm256_set1_pd(0);
+  //mutiple accumulators
+  __m256d sumBuffer1 = _mm256_set1_pd(0);
+  __m256d sumBuffer2 = _mm256_set1_pd(0);
+  __m256d sumBuffer3 = _mm256_set1_pd(0);
+  __m256d sumBuffer4 = _mm256_set1_pd(0);
   size_t step = 4;// 4 double = 64 bytes.
   size_t i = 0;
-  for(;i+step <= N; i+=step){ 
+  for(;i+4*step <= N; i+=4*step){ 
+  //for(;i+2*step <= N; i+=2*step){ 
+  //for(;i+step <= N; i+=step){ 
     __m256d p1 = _mm256_load_pd(v1+i);
     __m256d p2 = _mm256_load_pd(v2+i);
     __m256d sub1 = _mm256_sub_pd(p1, p2);
-    __m256d sub2 = _mm256_sub_pd(p1, p2);
-    sumBuffer = _mm256_add_pd(sumBuffer, _mm256_mul_pd(sub1, sub2));
+    __m256d p3 = _mm256_load_pd(v1+i+4);
+    __m256d p4 = _mm256_load_pd(v2+i+4);
+    __m256d sub2 = _mm256_sub_pd(p3, p4);
+    __m256d p5 = _mm256_load_pd(v1+i+8);
+    __m256d p6 = _mm256_load_pd(v2+i+8);
+    __m256d sub3 = _mm256_sub_pd(p5, p6);
+    __m256d p7 = _mm256_load_pd(v1+i+12);
+    __m256d p8 = _mm256_load_pd(v2+i+12);
+    __m256d sub4 = _mm256_sub_pd(p7, p8);
+    sumBuffer1 = _mm256_fmadd_pd(sub1, sub1, sumBuffer1);
+    sumBuffer2 = _mm256_fmadd_pd(sub2, sub2, sumBuffer2);
+    sumBuffer3 = _mm256_fmadd_pd(sub3, sub3, sumBuffer3);
+    sumBuffer4 = _mm256_fmadd_pd(sub4, sub4, sumBuffer4);
   }
 
+  sumBuffer1 = _mm256_add_pd(sumBuffer1, sumBuffer2);
+  sumBuffer2 = _mm256_add_pd(sumBuffer3, sumBuffer4);
+  sumBuffer1 = _mm256_add_pd(sumBuffer1, sumBuffer2);
+
   double result[step];
-  _mm256_store_pd(result, sumBuffer);
+  _mm256_store_pd(result, sumBuffer1);
   double remain = 0;
   for(;i < N;i++){
     remain += (v1[i]-v2[i])*(v1[i]-v2[i]);
@@ -152,7 +173,7 @@ void kmeans::naiveFit(dataSetPtr& data){
   while(difference > _tol && iters<_maxIter){
 
 
-    //#pragma omp parallel for
+    #pragma omp parallel for collapse(2) num_threads(2)
     for(long i = 0; i < numOfData; i++){ 
       for(int c = 0; c < k;++c){ 
           squareDistances[i][c] = squareDistance(data[i], raw(clusters[c]), 0, dim);
@@ -251,7 +272,7 @@ void kmeans::SIMDFit(dataSetPtr& ds){
   while(difference > _tol && iters<_maxIter){
 
 
-    //#pragma omp parallel for
+    #pragma omp parallel for collapse(2) num_threads(2)
     for(long i = 0; i < numOfData; i++){ 
       for(int c = 0; c < k;++c){ 
           squareDistances[i][c] = squareDistanceSIMD(raw(data[i]), raw(clusters[c]), dim);
@@ -291,7 +312,7 @@ void kmeans::SIMDFit(dataSetPtr& ds){
 
     difference = 0;
     for(long c = 0; c < k; c++){
-      difference += squareDistance(raw(nextClusters[c]), raw(clusters[c]), 0,dim);
+      difference += squareDistanceSIMD(raw(nextClusters[c]), raw(clusters[c]), dim);
     }
     difference = sqrt(difference);
     

@@ -23,7 +23,7 @@ public:
 
 class kmeans{
 public:
-  kmeans(int n_clusters, int maxIter=300, double tol=1e-4, bool verbose=false, bool simd=false)
+  kmeans(int n_clusters, int maxIter=300, double tol=1e-4, bool verbose=false, bool simd=false, size_t threadNum=4)
     :
     _n_clusters{n_clusters},
     _maxIter{maxIter},
@@ -31,7 +31,7 @@ public:
     _verbose{verbose},
     _inertia{-1},
     _simd{simd},
-    _threadNum{8}
+    _threadNum{threadNum}
   {}
 
   void fit(dataSetPtr& ds);

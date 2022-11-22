@@ -9,14 +9,14 @@ using denseArray = py::array_t<double, py::array::c_style | py::array::forcecast
 
 class kmeansForPy{
 public:
-  kmeansForPy(int k,int maxIter, double tol, bool verbose, bool simd)
-    :kmeansEngine{k,maxIter,tol,verbose, simd}
+  kmeansForPy(int k,int maxIter, double tol, bool verbose, bool simd, size_t threadNum)
+    :kmeansEngine{k,maxIter,tol,verbose, simd, threadNum}
   {
   }
 
   // init cluster constructor
-  kmeansForPy(int k, denseArray initCluster, int maxIter, double tol, bool verbose, bool simd)
-    :kmeansForPy{k,maxIter,tol,verbose, simd}
+  kmeansForPy(int k, denseArray initCluster, int maxIter, double tol, bool verbose, bool simd, size_t threadNum)
+    :kmeansForPy{k,maxIter,tol,verbose, simd, threadNum}
   {
     py::buffer_info info = initCluster.request();
     assert(info.ndim==2);
@@ -52,8 +52,8 @@ private:
 PYBIND11_MODULE(kmeans, m) {
   m.doc() = "kmeans";
   pybind11::class_<kmeansForPy>(m, "kmeans")
-      .def(pybind11::init<size_t, size_t, double, bool, bool>())
-      .def(pybind11::init<size_t, denseArray, size_t, double, bool, bool>())
+      .def(pybind11::init<size_t, size_t, double, bool, bool, size_t>())
+      .def(pybind11::init<size_t, denseArray, size_t, double, bool, bool, size_t>())
       .def("fit", &kmeansForPy::fit).
       def_property("inertia_", &kmeansForPy::inertia, nullptr);
 } 

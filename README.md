@@ -374,4 +374,60 @@ double kmeans::squareDistance(double *v1, double *v2, long start, long end){
 
 ``` 
 
+openmp reduction:
+
+原本沒有用reduction來加總inertia_ 
+![before fix](https://user-images.githubusercontent.com/52790122/203272092-76a2def2-26ec-4e9d-963c-c592a592eaaf.PNG)    
+```
+    _inertia = 0;
+    #pragma omp parallel num_threads(_threadNum)
+    {
+      int id = omp_get_thread_num();
+      for(long i = id; i < data.size(); i+=_threadNum){
+        long closet=0;
+        double minimumDist = std::numeric_limits<double>::max();
+        for(long c = 0; c < k; c++){
+          if(distances[i][c] < minimumDist){
+            minimumDist = distances[i][c];
+            closet = c;
+          }
+        }
+        addVec(raw(collectors[id].cSum[closet]), raw(data[i]), dim, _simd);
+        collectors[id].cSize[closet]++;
+        #pragma omp atomic
+        _inertia += minimumDist;
+      }
+    }
+
+
+```
+
+lock: 
+![image](https://user-images.githubusercontent.com/52790122/203272379-9d4da46c-0750-4eb1-8e31-74715a47b61a.png)   
+
+
+後來有用:     
+![after fix](https://user-images.githubusercontent.com/52790122/203272099-ffe2bcf5-0148-46ac-abcd-bcd252ff75a5.PNG) 
+```
+
+    _inertia = 0;
+    #pragma omp parallel num_threads(_threadNum) reduction(+:_inertia)
+    {
+      int id = omp_get_thread_num();
+      for(long i = id; i < data.size(); i+=_threadNum){
+        long closet=0;
+        double minimumDist = std::numeric_limits<double>::max();
+        for(long c = 0; c < k; c++){
+          if(distances[i][c] < minimumDist){
+            minimumDist = distances[i][c];
+            closet = c;
+          }
+        }
+        addVec(raw(collectors[id].cSum[closet]), raw(data[i]), dim, _simd);
+        collectors[id].cSize[closet]++;
+        _inertia += minimumDist;
+      }
+    }
+
+```
 

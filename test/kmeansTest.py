@@ -39,7 +39,7 @@ def test_seq_blobs():
     kmeans = KMeans(n_clusters=4, max_iter=max_iter, init=initCluster)
     kmeans.fit(x)
     sklearn_loss = kmeans.inertia_
-    mykmeans = myKMeans.kmeans(4, initCluster, max_iter, 1e-4 ,False, False, 8)
+    mykmeans = myKMeans.kmeans64(4, initCluster, max_iter, 1e-4 ,False, False, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
@@ -49,7 +49,7 @@ def test_digits():
     kmeans = KMeans(n_clusters=10, max_iter=max_iter, init=initCluster)
     kmeans.fit(x) 
     sklearn_loss = kmeans.inertia_
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False, 8)
+    mykmeans = myKMeans.kmeans64(10, initCluster, max_iter, 1e-4 ,False, False, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
@@ -59,7 +59,7 @@ def test_seq_blobs_simd():
     kmeans = KMeans(n_clusters=4, max_iter=max_iter, init=initCluster)
     kmeans.fit(x)
     sklearn_loss = kmeans.inertia_
-    mykmeans = myKMeans.kmeans(4, initCluster, max_iter, 1e-4 ,False, True, 8)
+    mykmeans = myKMeans.kmeans64(4, initCluster, max_iter, 1e-4 ,False, True, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
@@ -69,7 +69,7 @@ def test_digits_simd():
     kmeans = KMeans(n_clusters=10, max_iter=max_iter, init=initCluster)
     kmeans.fit(x) 
     sklearn_loss = kmeans.inertia_
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True, 8)
+    mykmeans = myKMeans.kmeans64(10, initCluster, max_iter, 1e-4 ,False, True, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
@@ -79,7 +79,7 @@ def test_digits_simd():
 #    kmeans = KMeans(n_clusters=10, max_iter=max_iter, init=initCluster)
 #    kmeans.fit(x) 
 #    sklearn_loss = kmeans.inertia_
-#    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False)
+#    mykmeans = myKMeans.kmeans64(10, initCluster, max_iter, 1e-4 ,False)
 #    mykmeans.fit(x)
 #    myloss = mykmeans.inertia_
 #    assert(abs(sklearn_loss-myloss) / myloss < 1e-10)

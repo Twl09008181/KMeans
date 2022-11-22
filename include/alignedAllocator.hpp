@@ -32,6 +32,8 @@ bool operator!=(const alignedAllocator<T>&a, const alignedAllocator<U>&b){
   return false;
 }
 
-using alignedVector = std::vector<double, alignedAllocator<double>>;
+
+template<typename T>
+using alignedVectorType = std::vector<T, alignedAllocator<T>>;
 
 #endif

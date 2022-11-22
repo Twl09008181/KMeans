@@ -310,9 +310,68 @@ It seems simd can really help to speed up, however, sklearn version is very stro
 I need to find some other optimization way in the future.   
 
 
+### 11/22 - alignment 自動判斷
 
 
+intptr_t:
+https://stackoverflow.com/questions/35071200/what-is-the-use-of-intptr-t  
+敘述: 
+The primary reason, you cannot do bitwise operation on a void *, but you can do the same on a intptr_t.    
+On many occassion, where you need to perform bitwise operation on an address, you can use intptr_t.     
+
+可以用intptr_t來對記憶體位置做的bitwise操作，    
+我可以用這個來檢測記憶體位置是否對齊16 byte(0xf) 或32 byte(0x1f)     
+  
+```
+#include <stdlib.h>
+#include <iostream>
+using T = float;
+void isAligned(T* address, unsigned alignment){
+  //when alignment = 16, then alignment -1  = 0xf
+  //when alignment = 32, then alignment -1  = 0x1f
+  if((intptr_t(address) & alignment-1)!=0){
+    std::cout<<"address"<<address<<" is not alligned with "<<alignment<<" \n";
+  }
+  else{
+    std::cout<<"address"<<address<<" is  alligned with "<<alignment<<" \n";
+  }
+}
+int main(){
+
+  T *address16 = static_cast<T*>(aligned_alloc(16, 16));
+  isAligned(address16, 16);
+  isAligned(address16, 32);
+
+  T *address32 = static_cast<T*>(aligned_alloc(32, 32));
+  isAligned(address32, 16);
+  isAligned(address32, 32);
+}
+```     
+address0x55e5d5908eb0 is  alligned with 16    
+address0x55e5d5908eb0 is not alligned with 32     
+address0x55e5d59092e0 is  alligned with 16    
+address0x55e5d59092e0 is  alligned with 32    
+
+可以知道32bytes aligment一定對齊16 bytes,因為32是16的倍數 
+但16 bytes aligment不一定對齊32 bytes(有時候碰巧為公倍數時會對齊)
+
+檢測是否對齊32 bytes --> 必須在最後的5bits=0(2進位) -->與0x1f做bitwise and  
+檢測是否對齊16 bytes --> 必須在最後的4bits=0(2進位) -->與0x0f做bitwise and  
+
+有了對齊偵測，就可以幫助Kmeans判斷要用simd還是不要用simd 
+``` 
+
+double kmeans::squareDistance(double *v1, double *v2, long start, long end){
+  bool isAlignment = ((intptr_t(v1) & 0x1f)==0) && ((intptr_t(v2) & 0x1f)==0);
+  if(isAlignment && _simd){
+    return squareDistanceSIMD(v1, v2, start, end);
+  }
+  else{
+    return squareDistanceScalar(v1, v2, start, end);
+  }
+}
 
 
+``` 
 
 

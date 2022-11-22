@@ -39,7 +39,7 @@ def test_seq_blobs():
     kmeans = KMeans(n_clusters=4, max_iter=max_iter, init=initCluster)
     kmeans.fit(x)
     sklearn_loss = kmeans.inertia_
-    mykmeans = myKMeans.kmeans(4, initCluster, max_iter, 1e-4 ,False)
+    mykmeans = myKMeans.kmeans(4, initCluster, max_iter, 1e-4 ,False, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
@@ -53,11 +53,11 @@ def test_digits_speed():
     e1 = perf_counter()
 
     s2 = perf_counter()
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     e2 = perf_counter()
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True, 8)
     s3 = perf_counter()
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
@@ -74,12 +74,12 @@ def test_digits_mnist_speed():
     kmeans.fit(x) 
     sklearn_loss = kmeans.inertia_
     e1 = perf_counter()
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, False, 8)
     s2 = perf_counter()
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     e2 = perf_counter()
-    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True)
+    mykmeans = myKMeans.kmeans(10, initCluster, max_iter, 1e-4 ,False, True, 8)
     s3 = perf_counter()
     mykmeans.fit(x)
     myloss = mykmeans.inertia_

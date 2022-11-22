@@ -17,6 +17,8 @@ mnistTest: test/mnistTest.cc build/loadMnist.o   build/kmeans.o
 runtest:build/kmeans.so
 	PYTHONPATH=build pytest test/kmeansTest.py
 
+cacheTest: build/loadMnist.o cacheTest.cc
+	g++ cacheTest.cc -I./include -march=native build/loadMnist.o -o cacheTest
 
 clean:
 	rm -r -f build

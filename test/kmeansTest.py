@@ -73,13 +73,3 @@ def test_digits_simd():
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
-#
-#def test_digits_mnist():
-#    x, initCluster, max_iter = digits_setup_mnist()
-#    kmeans = KMeans(n_clusters=10, max_iter=max_iter, init=initCluster)
-#    kmeans.fit(x) 
-#    sklearn_loss = kmeans.inertia_
-#    mykmeans = myKMeans.kmeans64(10, initCluster, max_iter, 1e-4 ,False)
-#    mykmeans.fit(x)
-#    myloss = mykmeans.inertia_
-#    assert(abs(sklearn_loss-myloss) / myloss < 1e-10)

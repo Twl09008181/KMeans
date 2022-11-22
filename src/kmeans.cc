@@ -137,30 +137,18 @@ double squareDistanceSIMD(float *v1, float *v2, long s, long e){
   //mutiple accumulators
   __m256 sumBuffer1 = _mm256_set1_ps(0);
   __m256 sumBuffer2 = _mm256_set1_ps(0);
-  __m256 sumBuffer3 = _mm256_set1_ps(0);
-  __m256 sumBuffer4 = _mm256_set1_ps(0);
   size_t step = 8;// 8 floats= 64 bytes.
   size_t i = s;
-  for(;i+4*step < e; i+=4*step){ 
+  for(;i+2*step < e; i+=2*step){ 
     __m256 p1 = _mm256_load_ps(v1+i);
     __m256 p2 = _mm256_load_ps(v2+i);
     __m256 sub1 = _mm256_sub_ps(p1, p2);
     __m256 p3 = _mm256_load_ps(v1+i+step);
     __m256 p4 = _mm256_load_ps(v2+i+step);
     __m256 sub2 = _mm256_sub_ps(p3, p4);
-    __m256 p5 = _mm256_load_ps(v1+i+2*step);
-    __m256 p6 = _mm256_load_ps(v2+i+2*step);
-    __m256 sub3 = _mm256_sub_ps(p5, p6);
-    __m256 p7 = _mm256_load_ps(v1+i+3*step);
-    __m256 p8 = _mm256_load_ps(v2+i+3*step);
-    __m256 sub4 = _mm256_sub_ps(p7, p8);
     sumBuffer1 = _mm256_fmadd_ps(sub1, sub1, sumBuffer1);
     sumBuffer2 = _mm256_fmadd_ps(sub2, sub2, sumBuffer2);
-    sumBuffer3 = _mm256_fmadd_ps(sub3, sub3, sumBuffer3);
-    sumBuffer4 = _mm256_fmadd_ps(sub4, sub4, sumBuffer4);
   }
-  sumBuffer1 = _mm256_add_ps(sumBuffer1, sumBuffer2);
-  sumBuffer2 = _mm256_add_ps(sumBuffer3, sumBuffer4);
   sumBuffer1 = _mm256_add_ps(sumBuffer1, sumBuffer2);
   float result[step];
   _mm256_store_ps(result, sumBuffer1);

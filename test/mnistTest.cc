@@ -12,8 +12,8 @@ int main(int argc,char*argv[]){
     
     dataSetPtr<T> mnistPtr(mnist.num, mnist.dim, &mnist.data[0]);
 
-    for(int threadNum = 8; threadNum <= 8; ++threadNum){
-      std::cout<<"threadNum: "<< threadNum<<"\n";
+    for(int threadNum = 1; threadNum <= 16; ++threadNum){
+      std::cout<<"\nthreadNum: "<< threadNum<<"\n";
       auto start = chrono::steady_clock::now();
       kmeans<T> kms(10,300,1e-4,false, false, threadNum);
       kms.fit(mnistPtr);

@@ -15,6 +15,7 @@ public:
   double* operator[](unsigned i){
    return _dataBuf + i * _dataDim;
   }
+  size_t size()const{return _dataNum;}
   long _dataNum;
   long _dataDim;
   double* _dataBuf;
@@ -29,7 +30,8 @@ public:
     _tol{tol},
     _verbose{verbose},
     _inertia{-1},
-    _simd{simd}
+    _simd{simd},
+    _threadNum{8}
   {}
 
   void fit(dataSetPtr& ds);
@@ -39,12 +41,19 @@ public:
   bool _verbose;
   double _inertia;
   bool _simd;
-  std::vector<alignedVector>_initCluster;
+  size_t _threadNum;
+  std::vector<std::vector<double>>_initCluster;
 private:
-  void naiveFit(dataSetPtr& ds);
-  void SIMDFit(dataSetPtr& ds);
-  std::vector<alignedVector>init(dataSetPtr&ds);
-  std::vector<alignedVector>init(std::vector<alignedVector>&ds);
+
+  template<typename dataSet, typename cluster>
+  void distanceCaculation(dataSet&, std::vector<cluster>&, long dim, std::vector<std::vector<double>>&out);
+  template<typename dataSet, typename cluster>
+  std::vector<cluster> updateClusters(dataSet&, const std::vector<std::vector<double>>&distance, long k, long dim);
+  template<typename dataSet, typename cluster>
+  void fitCore(dataSet& data, std::vector<cluster>&clusters);
+
+  template<typename cluster>
+  std::vector<cluster>init(dataSetPtr&ds);
 };
 
 #endif

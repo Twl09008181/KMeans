@@ -21,7 +21,7 @@ public:
     py::buffer_info info = initCluster.request();
     assert(info.ndim==2);
     assert(k==info.shape[0]);
-    std::vector<alignedVector>initC(k, alignedVector(info.shape[1]));
+    std::vector<std::vector<double>>initC(k, std::vector<double>(info.shape[1]));
     double* buf = static_cast<double*>(info.ptr);
     for(int i = 0; i < k; i++){
       for(long dim = 0; dim < info.shape[1]; ++dim){

@@ -8,6 +8,7 @@
 #include <math.h>
 #include <immintrin.h>
 #include <alignedAllocator.hpp>
+#include <iterator>
 
 
 void addVecSIMD(double* v1, double *v2, long N){ 
@@ -24,11 +25,23 @@ void addVecSIMD(double* v1, double *v2, long N){
   }
 }
 
-void addVec(double* p1, double *p2, long dim){ 
+void addVecScalar(double* p1, double *p2, long dim){ 
   for(long b = 0; b < dim; ++b){ 
     p1[b]+=p2[b];
   }
 }
+
+
+void addVec(double* v1, double *v2, long N, bool simd=false){ 
+  bool isAlignment = ((intptr_t(v1) & 0x1f)==0) && ((intptr_t(v2) & 0x1f)==0);
+  if(isAlignment && simd){
+     addVecSIMD(v1, v2, N);
+  }
+  else{
+     addVecScalar(v1, v2, N);
+  }
+}
+
 
 void scaling(double* p1, double scale, long dim){ 
   for(long b = 0; b < dim; ++b){ 
@@ -36,6 +49,15 @@ void scaling(double* p1, double scale, long dim){
   }
 }
 
+//scalar version 
+double squareDistanceScalar(double* p1, double *p2, long s, long e){ 
+  double dis = 0;
+  for(long b = s; b < e; ++b){ 
+    dis += (p1[b]-p2[b]) *(p1[b]-p2[b]);
+  }
+  return dis;
+}
+//simd
 double squareDistanceSIMD(double *v1, double *v2, long s, long e){
 
   //mutiple accumulators
@@ -72,323 +94,202 @@ double squareDistanceSIMD(double *v1, double *v2, long s, long e){
 
   double result[step];
   _mm256_store_pd(result, sumBuffer1);
+  double sum = 0;
+  for(int j = 0; j < step; j++)
+    sum+=result[j];
+
   double remain = 0;
   for(;i < e;i++){
     remain += (v1[i]-v2[i])*(v1[i]-v2[i]);
   }
-  double sum = 0;
-  for(int j = 0; j < step; j++)
-    sum+=result[j];
   return sum+ remain;
 }
 
-
-//simd
-double squareDistanceSIMD(double *v1, double *v2, long N){
-
-  //mutiple accumulators
-  __m256d sumBuffer1 = _mm256_set1_pd(0);
-  __m256d sumBuffer2 = _mm256_set1_pd(0);
-  __m256d sumBuffer3 = _mm256_set1_pd(0);
-  __m256d sumBuffer4 = _mm256_set1_pd(0);
-  size_t step = 4;// 4 double = 64 bytes.
-  size_t i = 0;
-  for(;i+4*step <= N; i+=4*step){ 
-  //for(;i+2*step <= N; i+=2*step){ 
-  //for(;i+step <= N; i+=step){ 
-    __m256d p1 = _mm256_load_pd(v1+i);
-    __m256d p2 = _mm256_load_pd(v2+i);
-    __m256d sub1 = _mm256_sub_pd(p1, p2);
-    __m256d p3 = _mm256_load_pd(v1+i+4);
-    __m256d p4 = _mm256_load_pd(v2+i+4);
-    __m256d sub2 = _mm256_sub_pd(p3, p4);
-    __m256d p5 = _mm256_load_pd(v1+i+8);
-    __m256d p6 = _mm256_load_pd(v2+i+8);
-    __m256d sub3 = _mm256_sub_pd(p5, p6);
-    __m256d p7 = _mm256_load_pd(v1+i+12);
-    __m256d p8 = _mm256_load_pd(v2+i+12);
-    __m256d sub4 = _mm256_sub_pd(p7, p8);
-    sumBuffer1 = _mm256_fmadd_pd(sub1, sub1, sumBuffer1);
-    sumBuffer2 = _mm256_fmadd_pd(sub2, sub2, sumBuffer2);
-    sumBuffer3 = _mm256_fmadd_pd(sub3, sub3, sumBuffer3);
-    sumBuffer4 = _mm256_fmadd_pd(sub4, sub4, sumBuffer4);
+double squareDistance(double *v1, double *v2, long start, long end, bool simd=false){
+  bool isAlignment = ((intptr_t(v1) & 0x1f)==0) && ((intptr_t(v2) & 0x1f)==0);
+  if(isAlignment && simd){
+    return squareDistanceSIMD(v1, v2, start, end);
   }
-
-  sumBuffer1 = _mm256_add_pd(sumBuffer1, sumBuffer2);
-  sumBuffer2 = _mm256_add_pd(sumBuffer3, sumBuffer4);
-  sumBuffer1 = _mm256_add_pd(sumBuffer1, sumBuffer2);
-
-  double result[step];
-  _mm256_store_pd(result, sumBuffer1);
-  double remain = 0;
-  for(;i < N;i++){
-    remain += (v1[i]-v2[i])*(v1[i]-v2[i]);
+  else{
+    return squareDistanceScalar(v1, v2, start, end);
   }
-  double s = 0;
-  for(int j = 0; j < step; j++)
-    s+=result[j];
-  return s + remain;
 }
 
 
-//simd future?
-double squareDistance(double* p1, double *p2, long s, long e){ 
-  double dis = 0;
-  for(long b = s; b < e; ++b){ 
-    dis += (p1[b]-p2[b]) *(p1[b]-p2[b]);
-  }
-  return dis;
-}
-
-double* raw(std::vector<double>&vec){
-  return &vec[0];
-}
-
+// for alignedVector
 double* raw(alignedVector&vec){
   return &vec[0];
 }
-
-std::vector<alignedVector>kmeans::init(dataSetPtr&ds){
-  if(_initCluster.empty()){
-    srand(0);
-    long numOfData = ds._dataNum;
-    long dim = ds._dataDim;
-    _initCluster.resize(_n_clusters, alignedVector(dim));
-    for(long c = 0; c < _n_clusters; ++c){
-      int i = rand() % numOfData;
-      if(_verbose){
-        std::cout<<"\n Initialization cluster "<<c<<" : \n";
-      }
-      for(long d = 0; d < dim; d++){
-        _initCluster[c][d] = ds[i][d];
-        if(_verbose){
-          std::cout<<_initCluster[c][d]<<" ";
-        }
-      }
-    }
-  }
-  return _initCluster;
+// for general vector
+double* raw(std::vector<double>&vec){
+  return &vec[0];
+}
+// for dataSetPtr's _dataBuf
+double* raw(double* p){
+  return p;
 }
 
+template<typename cluster>
+std::vector<cluster>kmeans::init(dataSetPtr&ds){
 
-std::vector<alignedVector> kmeans::init(std::vector<alignedVector>&ds){ 
-  if(_initCluster.empty()){
-    srand(0);
-    long numOfData = ds.size();
-    long dim = ds[0].size();
-    _initCluster.resize(_n_clusters, alignedVector(dim));
-    for(long c = 0; c < _n_clusters; ++c){
-      int i = rand() % numOfData;
-      if(_verbose){
-        std::cout<<"\n Initialization cluster "<<c<<" : \n";
-      }
-      for(long d = 0; d < dim; d++){
-        _initCluster[c][d] = ds[i][d];
-        if(_verbose){
-          std::cout<<_initCluster[c][d]<<" ";
-        }
-      }
-    }
-  }
-  return _initCluster;
-}
-
-void kmeans::fit(dataSetPtr& ds){
-  if(_simd)
-    SIMDFit(ds);
-  else
-    naiveFit(ds);
-}
-
-void kmeans::naiveFit(dataSetPtr& data){ 
-
-
-  long k = _n_clusters;
-  long numOfData = data._dataNum;
-  long dim = data._dataDim;
-  if(_verbose){
-    std::cout<<"num of data:"<<numOfData<<"\n";
-    std::cout<<"num of dim:"<<dim<<"\n";
-  }
-  //init
-  auto clusters = init(data);
-  double difference = std::numeric_limits<double>::max();
-  int iters = 0;
-  std::vector<std::vector<double>>squareDistances(numOfData, std::vector<double>(k,0));
-  while(difference > _tol && iters<_maxIter){
-
-
-    #pragma omp parallel for collapse(2) num_threads(16)
-    for(long i = 0; i < numOfData; i++){ 
-      for(int c = 0; c < k;++c){ 
-          squareDistances[i][c] = squareDistance(data[i], raw(clusters[c]), 0, dim);
-      }
-    }
-
-    std::vector<alignedVector>nextClusters(k, alignedVector(dim,0));
-    std::vector<long>clusterSize(k,0);
-    _inertia = 0;
-    //assign data to closet cluster.
-    for(long i = 0; i < numOfData; i++){
-      long closet=0;
-      double minimumDist = std::numeric_limits<double>::max();
-      for(long c = 0; c < k; c++){
-        if(squareDistances[i][c] < minimumDist){
-          minimumDist = squareDistances[i][c];
-          closet = c;
-        }
-      }
-      addVec(raw(nextClusters[closet]), data[i], dim);
-      clusterSize[closet]++;
-      _inertia += minimumDist;
-    }
-
-
-
-    if(_verbose){
-      std::cout<<"\nIteration "<<iters<<", inertia "<<_inertia<<".\n";
-    }
-
-    //update clusters
-    for(long c = 0; c < k; c++){
-      scaling(raw(nextClusters[c]), clusterSize[c], dim);
-    }
-
-    difference = 0;
-    for(long c = 0; c < k; c++){
-      difference += squareDistance(raw(nextClusters[c]), raw(clusters[c]), 0,dim);
-    }
-    difference = sqrt(difference);
-    
-    clusters = std::move(nextClusters);
-    iters++;
-  }
-
-  if(_verbose){
-    std::cout<<"Iterations:"<<iters<<"\n";
-    for(long c = 0; c < k; ++c){
-      std::cout<<"cluster"<<c<<":\n";
-      for(long d = 0; d < dim; d++)
-        std::cout<<clusters[c][d]<<" ";
-      std::cout<<"\n";
-    }
-    std::cout<<"inertia:"<<_inertia<<"\n";
-
-  }
-}
-
-
-
-
-void kmeans::SIMDFit(dataSetPtr& ds){ 
-
-  long k = _n_clusters;
   long numOfData = ds._dataNum;
   long dim = ds._dataDim;
 
-  std::vector<alignedVector>data(numOfData, alignedVector(dim));
-
-  for(long i = 0; i < numOfData; i++){ 
-    for(long d = 0; d < dim; ++d){ 
-      data[i][d] = ds[i][d];
+  //random initialization
+  if(_initCluster.empty()){
+    srand(0);
+    _initCluster.resize(_n_clusters, std::vector<double>(dim));
+    for(long c = 0; c < _n_clusters; ++c){
+      int i = rand() % numOfData;
+      if(_verbose){std::cout<<"\n Initialization cluster "<<c<<" : \n";}
+      for(long d = 0; d < dim; d++){
+        _initCluster[c][d] = ds[i][d];
+        if(_verbose){std::cout<<_initCluster[c][d]<<" ";}
+      }
     }
   }
 
-  if(_verbose){
-    std::cout<<"num of data:"<<numOfData<<"\n";
-    std::cout<<"num of dim:"<<dim<<"\n";
-  }
-  //init
-  std::vector<alignedVector>clusters = init(data);
-  double difference = std::numeric_limits<double>::max();
-  int iters = 0;
-  if(_verbose){
-    std::cout<<"Iterations:"<<iters<<"\n";
-    for(long c = 0; c < k; ++c){
-      std::cout<<"cluster"<<c<<":\n";
-      for(long d = 0; d < dim; d++)
-        std::cout<<clusters[c][d]<<" ";
-      std::cout<<"\n";
+  std::vector<cluster> clusters(_initCluster.size(), cluster( _initCluster.at(0).size()));
+  for(long c = 0; c < _n_clusters; ++c){
+    for(long d = 0; d < dim; d++){
+      clusters[c][d] = _initCluster[c][d];
     }
-    std::cout<<"inertia:"<<_inertia<<"\n";
-
   }
-  std::vector<std::vector<double>>squareDistances(numOfData, std::vector<double>(k,0));
+  return clusters;
+}
 
-  const int threadNum = 16;
 
-  while(difference > _tol && iters<_maxIter){
 
-    #pragma omp parallel for  num_threads(threadNum)
-    for(long i = 0; i < numOfData; i++){ 
-        for(int c = 0; c < k;++c){ 
-            //squareDistances[i][c] += squareDistanceSIMD(raw(data[i]), raw(clusters[c]), d, std::min(d+tile,dim));
-            //squareDistances[i][c] = squareDistance(raw(data[i]), raw(clusters[c]), 0, dim);
-            squareDistances[i][c] = squareDistanceSIMD(raw(data[i]), raw(clusters[c]), 0, dim);
-        }
-    }
 
-    std::vector<alignedVector>nextClusters(k, alignedVector(dim,0));
-    std::vector<long>clusterSize(k,0);
-    _inertia = 0;
+template<typename dataSet, typename cluster>
+void kmeans::distanceCaculation(
+    dataSet& ds,
+    std::vector<cluster>& clusters,
+    long dim,
+    std::vector<std::vector<double>>&distance)
+{ 
+  #pragma omp parallel for  num_threads(_threadNum)
+  for(long i = 0; i < ds.size(); i++){ 
+      for(int c = 0; c < clusters.size();++c){ 
+          distance[i][c] = squareDistance(raw(ds[i]), raw(clusters[c]), 0, dim, _simd);
+      }
+  }
+}
+
+
+template<typename dataSet, typename cluster>
+std::vector<cluster> kmeans::updateClusters(
+    dataSet& data,
+    const std::vector<std::vector<double>>&distances,
+    long k,
+    long dim)
+{
+
     //assign data to closet cluster.
-    
     struct collector{
-      std::vector<alignedVector>cSum;
+      std::vector<cluster>cSum;
       std::vector<long>cSize;
     };
 
-    collector collectors[threadNum];
-    for(int i = 0; i < threadNum; i++){
-      collectors[i].cSum.resize(k, alignedVector(dim,0));
+    collector collectors[_threadNum];
+    for(int i = 0; i < _threadNum; i++){
+      collectors[i].cSum.resize(k, cluster(dim,0));
       collectors[i].cSize.resize(k,0);
     }
 
-    #pragma omp parallel num_threads(threadNum)
+    _inertia = 0;
+    #pragma omp parallel num_threads(_threadNum)
     {
       int id = omp_get_thread_num();
-      for(long i = id; i < numOfData; i+=threadNum){
+      for(long i = id; i < data.size(); i+=_threadNum){
         long closet=0;
         double minimumDist = std::numeric_limits<double>::max();
         for(long c = 0; c < k; c++){
-          if(squareDistances[i][c] < minimumDist){
-            minimumDist = squareDistances[i][c];
+          if(distances[i][c] < minimumDist){
+            minimumDist = distances[i][c];
             closet = c;
           }
         }
-        addVecSIMD(raw(collectors[id].cSum[closet]), raw(data[i]), dim);
+        addVec(raw(collectors[id].cSum[closet]), raw(data[i]), dim, _simd);
         collectors[id].cSize[closet]++;
         #pragma omp atomic
         _inertia += minimumDist;
       }
     }
 
-
     //combine
-    for(long i = 0; i < threadNum; i++){
+    for(long i = 1; i < _threadNum; i++){
       for(long c = 0; c < k; c++){
-        addVecSIMD(raw(nextClusters[c]), raw(collectors[i].cSum[c]), dim);
-        clusterSize[c] += collectors[i].cSize[c];
+        addVec(raw(collectors[0].cSum[c]), raw(collectors[i].cSum[c]), dim);
+        collectors[0].cSize[c] += collectors[i].cSize[c];
       }
     }
+    //update clusters
+    for(long c = 0; c < k; c++){
+      scaling(raw(collectors[0].cSum[c]), collectors[0].cSize[c], dim);
+    }
+    return std::move(collectors[0].cSum);
+}
 
 
+
+void kmeans::fit(dataSetPtr& ds){
+  if(_verbose){
+    std::cout<<"num of data:"<<ds.size()<<"\n";
+    std::cout<<"num of dim:"<<ds.dim()<<"\n";
+  }
+  if(_simd){
+    // make sure data is aligned.
+    using dataType = alignedVector;
+    std::vector<dataType>data(ds.size(), alignedVector(ds.dim()));
+    for(long i = 0; i < ds.size(); i++)
+      for(long d = 0; d < ds.dim(); ++d) 
+        data[i][d] = ds[i][d];
+    std::vector<dataType> clusters = init<dataType>(ds);
+    fitCore(data, clusters);
+  }
+  else{
+    using cluster = std::vector<double>;
+    std::vector<cluster> clusters = init<cluster>(ds);
+    fitCore(ds, clusters);
+  }
+}
+
+template<typename dataSet, typename cluster>
+void kmeans::fitCore(dataSet& data, std::vector<cluster>&clusters){ 
+
+  //basic information
+  long k = _n_clusters;
+  long numOfData = data.size();
+  long dim = clusters.at(0).size();
+
+  // iteration 
+  double difference = std::numeric_limits<double>::max();
+  int iters = 0;
+
+  // distance array
+  std::vector<std::vector<double>>squareDistances(numOfData, std::vector<double>(k,0));
+
+  // core schedule
+  while(difference > _tol && iters<_maxIter){
+
+    // step1 
+    distanceCaculation(data, clusters, dim, squareDistances);
+
+    // step2
+    auto nextClusters = updateClusters<dataSet, cluster>(data, squareDistances, k, dim);
+
+    // check convergence
+    difference = 0;
+    for(long c = 0; c < k; c++){
+      difference += squareDistance(raw(nextClusters[c]), raw(clusters[c]), 0, dim);
+    }
+    difference = sqrt(difference);
 
     if(_verbose){
       std::cout<<"\nIteration "<<iters<<", inertia "<<_inertia<<".\n";
     }
 
-    //update clusters
-    for(long c = 0; c < k; c++){
-      scaling(raw(nextClusters[c]), clusterSize[c], dim);
-    }
-
-    difference = 0;
-    for(long c = 0; c < k; c++){
-      difference += squareDistanceSIMD(raw(nextClusters[c]), raw(clusters[c]), dim);
-    }
-    difference = sqrt(difference);
-    
     clusters = std::move(nextClusters);
     iters++;
   }
@@ -402,6 +303,6 @@ void kmeans::SIMDFit(dataSetPtr& ds){
       std::cout<<"\n";
     }
     std::cout<<"inertia:"<<_inertia<<"\n";
-
   }
 }
+

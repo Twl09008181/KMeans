@@ -37,14 +37,7 @@ def digits_setup_mnist32():
     return images, initCluster, 300
 
 
-def test_digits_mnist(engine, dataType):
-    if dataType==32:
-        x, initCluster, max_iter = digits_setup_mnist32()
-    elif dataType == 64:
-        x, initCluster, max_iter = digits_setup_mnist64()
-    else:
-        print("not support type")
-
+def test_digits_mnist(engine, dataType, x, initCluster):
     if(engine == "sklearn"):
         kmeans = KMeans(n_clusters=10, max_iter=max_iter, init=initCluster)
     
@@ -62,8 +55,17 @@ def test_digits_mnist(engine, dataType):
     s = perf_counter()
     kmeans.fit(x)
     e = perf_counter()
-    print(e-s,"s")
-    
+    return e-s
 
+engine, dataType = sys.argv[1], int(sys.argv[2])
+if dataType==32:
+    x, initCluster, max_iter = digits_setup_mnist32()
+elif dataType == 64:
+    x, initCluster, max_iter = digits_setup_mnist64()
+else:
+    print("not support type")
 
-test_digits_mnist(sys.argv[1], int(sys.argv[2]))
+t = 0
+for i in range(int(sys.argv[3])):
+    t += test_digits_mnist(engine, dataType, x, initCluster)
+print(t/int(sys.argv[3]),"s")

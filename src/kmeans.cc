@@ -57,6 +57,7 @@ double squareDistanceScalar(double* p1, double *p2, long s, long e){
   }
   return dis;
 }
+
 //simd
 double squareDistanceSIMD(double *v1, double *v2, long s, long e){
 
@@ -168,6 +169,8 @@ void kmeans::distanceCaculation(
     long dim,
     std::vector<std::vector<double>>&distance)
 { 
+
+  
   #pragma omp parallel for  num_threads(_threadNum)
   for(long i = 0; i < ds.size(); i++){ 
       for(int c = 0; c < clusters.size();++c){ 
@@ -198,7 +201,7 @@ std::vector<cluster> kmeans::updateClusters(
     }
 
     _inertia = 0;
-    #pragma omp parallel num_threads(_threadNum)
+    #pragma omp parallel num_threads(_threadNum) reduction(+:_inertia)
     {
       int id = omp_get_thread_num();
       for(long i = id; i < data.size(); i+=_threadNum){
@@ -212,7 +215,6 @@ std::vector<cluster> kmeans::updateClusters(
         }
         addVec(raw(collectors[id].cSum[closet]), raw(data[i]), dim, _simd);
         collectors[id].cSize[closet]++;
-        #pragma omp atomic
         _inertia += minimumDist;
       }
     }

@@ -431,3 +431,35 @@ lock:
 
 ```
 
+### 11/23 
+
+為了比較sklearn的效能，我查了相關文章來看sklearn是否是default使用single thread去執行Kmeans,  
+
+根據官方文件  
+https://scikit-learn.org/stable/computing/parallelism.html    
+![image](https://user-images.githubusercontent.com/52790122/203467886-ebb8f34c-a6dc-4b53-bdb6-453eb8b2a219.png) 
+
+sklearn依賴底層numpy使用到的BLAS library做加速，特別是矩陣乘法或是內積運算，而內積運算恰好是計算距離的必須函數 
+，另外也有用到openMP的功能。 
+
+可以通過  
+$OMP_NUM_THREADS=4 python my_script.py  來設定使用到的thread數量 
+
+設定4:  
+![image](https://user-images.githubusercontent.com/52790122/203468247-2e391e34-8eab-4b62-931c-144e3fa81a7d.png)   
+設定8:  
+![image](https://user-images.githubusercontent.com/52790122/203468304-3eac064d-0b40-4a94-a859-4bf3abe929bc.png) 
+
+經過htop測試，可以發現真的可以透過設定OMP_NUM_THREADS來調整thread數量而獲得不同的速度。  
+另外，我也發現沒有設定OMP_NUM_THREADS的情況下，sklearn預設會使用最多的core去跑。   
+
+
+
+
+
+
+
+
+
+
+

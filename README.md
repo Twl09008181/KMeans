@@ -454,7 +454,71 @@ $OMP_NUM_THREADS=4 python my_script.py  來設定使用到的thread數量
 另外，我也發現沒有設定OMP_NUM_THREADS的情況下，sklearn預設會使用最多的core去跑。   
 
 
+Speed test結果
+```
+speed test
+simd 32 100 1
+simd 32 5.787364973276854 s (avg)
+simd 32 100 2
+simd 32 3.9799864610284565 s (avg)
+simd 32 100 4
+simd 32 2.299372552074492 s (avg)
+simd 32 100 8
+simd 32 0.9677951137442142 s (avg)
+simd 32 100 16
+simd 32 1.3149214490968735 s (avg)
+simd 64 100 1
+simd 64 8.745032999385149 s (avg)
+simd 64 100 2
+simd 64 9.319491544133053 s (avg)
+simd 64 100 4
+simd 64 3.652534303907305 s (avg)
+simd 64 100 8
+simd 64 1.4808816831652074 s (avg)
+simd 64 100 16
+simd 64 1.9994186255056412 s (avg)
+sk 32 100 1
+sklearn 32 3.1352578173857184 s (avg)
+sk 32 100 2
+sklearn 32 3.4311738300602883 s (avg)
+sk 32 100 4
+sklearn 32 2.095702317021787 s (avg)
+sk 32 100 8
+sklearn 32 1.4394715355243535 s (avg)
+sk 32 100 16
+sklearn 32 1.2227944400534034 s (avg)
+sk 64 100 1
+sklearn 64 6.440431696763262 s (avg)
+sk 64 100 2
+sklearn 64 2.819219327280298 s (avg)
+sk 64 100 4
+sklearn 64 3.218981904136017 s (avg)
+sk 64 100 8
+sklearn 64 1.4510139821842314 s (avg)
+sk 64 100 16
+sklearn 64 1.6890191600378603 s (avg)
+nsimd 32 100 1
+nosimd 32 79.64855243524536 s (avg)
+nsimd 32 100 2
+nosimd 32 32.16777385015972 s (avg)
+nsimd 32 100 4
+nosimd 32 15.62587890032679 s (avg)
+nsimd 32 100 8
+nosimd 32 4.825740269441158 s (avg)
+nsimd 32 100 16
+nosimd 32 6.563284729253501 s (avg)
+nsimd 64 100 1
+nosimd 64 57.1691414709948 s (avg)
+nsimd 64 100 2
+nosimd 64 12.27151867271401 s (avg)
+nsimd 64 100 4
+nosimd 64 16.25729835508391 s (avg)
+nsimd 64 100 8
+nosimd 64 8.070514596626163 s (avg)
+nsimd 64 100 16
+nosimd 64 6.147350513599813 s (avg)
 
+```
 
 
 

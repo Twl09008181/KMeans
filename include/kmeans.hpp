@@ -42,8 +42,8 @@ public:
     _threadNum{threadNum}
   {}
 
-  using alignedVector = alignedVectorType<T>;
   void fit(dataSetPtr<T>& ds);
+  std::vector<size_t> predict(dataSetPtr<T>& ds);
   int _n_clusters;
   int _maxIter;
   double _tol;
@@ -52,7 +52,13 @@ public:
   bool _simd;
   size_t _threadNum;
   std::vector<std::vector<T>>_initCluster;
+  std::vector<std::vector<T>>_cluster_centers;
+
+
+
+
 private:
+  using alignedVector = alignedVectorType<T>;
   template<typename dataSet, typename cluster>
   void distanceCaculation(dataSet&, std::vector<cluster>&, long dim, std::vector<std::vector<double>>&out);
   template<typename dataSet, typename cluster>
@@ -199,13 +205,42 @@ std::vector<cluster> kmeans<T>::updateClusters(
 }
 
 
+template<typename T>
+std::vector<size_t> kmeans<T>::predict(dataSetPtr<T>& ds){
+
+   std::vector<std::vector<double>>
+     distances(ds.size(), std::vector<double>(_n_clusters,0));
+  #pragma omp parallel for  num_threads(_threadNum)
+  for(long i = 0; i < ds.size(); i++){ 
+      for(int c = 0; c < _cluster_centers.size();++c){ 
+          distances[i][c] = squareDistance(raw(ds[i]), raw(_cluster_centers[c]), 0, ds.dim(), false);
+      }
+  }
+
+  std::vector<size_t>label(ds.size());
+
+  for(long i = 0; i < ds.size(); i++){ 
+    long closet=0;
+    double minimumDist = std::numeric_limits<double>::max();
+    for(long c = 0; c < _cluster_centers.size(); c++){
+      if(distances[i][c] < minimumDist){
+        minimumDist = distances[i][c];
+        closet = c;
+      }
+    }
+    label[i] = closet;
+  }
+  return label;
+}
 
 template<typename T>
 void kmeans<T>::fit(dataSetPtr<T>& ds){
+
   if(_verbose){
     std::cout<<"num of data:"<<ds.size()<<"\n";
     std::cout<<"num of dim:"<<ds.dim()<<"\n";
   }
+
   if(_simd){
     // make sure data is aligned.
     using dataType = alignedVector;
@@ -213,12 +248,13 @@ void kmeans<T>::fit(dataSetPtr<T>& ds){
     for(long i = 0; i < ds.size(); i++)
       for(long d = 0; d < ds.dim(); ++d) 
         data[i][d] = ds[i][d];
-    std::vector<dataType> clusters = init<dataType>(ds);
+    auto clusters = init<dataType>(ds);
     fitCore(data, clusters);
   }
   else{
+    // no need to copy ds.
     using cluster = std::vector<T>;
-    std::vector<cluster> clusters = init<cluster>(ds);
+    auto clusters = init<cluster>(ds);
     fitCore(ds, clusters);
   }
 }
@@ -262,6 +298,14 @@ void kmeans<T>::fitCore(dataSet& data, std::vector<cluster>&clusters){
     clusters = std::move(nextClusters);
     iters++;
   }
+
+  // save result
+  _cluster_centers.resize(k, std::vector<T>(dim));
+  for(long c = 0; c < k; ++c){
+    for(long d = 0; d < dim; d++)
+      _cluster_centers[c][d] = clusters[c][d];
+  }
+  
 
   if(_verbose){
     std::cout<<"Iterations:"<<iters<<"\n";

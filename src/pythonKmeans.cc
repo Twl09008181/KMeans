@@ -2,6 +2,7 @@
 #include <alignedAllocator.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 
 namespace py=pybind11;
@@ -37,7 +38,12 @@ public:
     dataSetPtr<T> dsptr = npToCpp(ds);
     kmeansEngine.fit(dsptr);
   }
+  std::vector<size_t> predict(denseArray<T>& ds){
+    dataSetPtr<T> dsptr = npToCpp(ds);
+    return kmeansEngine.predict(dsptr);
+  }
   double inertia(){return kmeansEngine._inertia;};
+  std::vector<std::vector<T>> cluster_centers(){return kmeansEngine._cluster_centers;}
 private:
   kmeans<T> kmeansEngine;
 
@@ -57,11 +63,16 @@ PYBIND11_MODULE(kmeans, m) {
   pybind11::class_<kmeansForPy<double>>(m, "kmeans64")
       .def(pybind11::init<size_t, size_t, double, bool, bool, size_t>())
       .def(pybind11::init<size_t, denseArray<double>, size_t, double, bool, bool, size_t>())
-      .def("fit", &kmeansForPy<double>::fit).
-      def_property("inertia_", &kmeansForPy<double>::inertia, nullptr);
+      .def("fit", &kmeansForPy<double>::fit)
+      .def("predict", &kmeansForPy<double>::predict)
+      .def_property("inertia_", &kmeansForPy<double>::inertia, nullptr)
+      .def_property("cluster_centers_", &kmeansForPy<double>::cluster_centers, nullptr);
+
   pybind11::class_<kmeansForPy<float>>(m, "kmeans32")
       .def(pybind11::init<size_t, size_t, float, bool, bool, size_t>())
       .def(pybind11::init<size_t, denseArray<float>, size_t, float, bool, bool, size_t>())
-      .def("fit", &kmeansForPy<float>::fit).
-      def_property("inertia_", &kmeansForPy<float>::inertia, nullptr);
+      .def("fit", &kmeansForPy<float>::fit)
+      .def("predict", &kmeansForPy<float>::predict)
+      .def_property("inertia_", &kmeansForPy<float>::inertia, nullptr)
+      .def_property("cluster_centers_", &kmeansForPy<float>::cluster_centers, nullptr);
 } 

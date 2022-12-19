@@ -42,7 +42,21 @@ def test_seq_blobs():
     mykmeans = myKMeans.kmeans64(4, initCluster, max_iter, 1e-4 ,False, False, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
+
+    # test fit result (loss)
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
+
+    # test label
+    my_labels = mykmeans.predict(x)
+    sk_labels = kmeans.predict(x)
+    assert((my_labels == sk_labels).all())
+
+    # test centers
+    my_centers = mykmeans.cluster_centers_
+    sk_centers = kmeans.cluster_centers_
+    for i in range(len(sk_centers)):
+        assert((abs(my_centers-sk_centers)<1e-4).all())
+
 
 def test_digits():
     x, initCluster, max_iter = digits_setup_sklearn()
@@ -52,7 +66,20 @@ def test_digits():
     mykmeans = myKMeans.kmeans64(10, initCluster, max_iter, 1e-4 ,False, False, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
+
+    # test fit result (loss)
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
+
+    # test label
+    my_labels = mykmeans.predict(x)
+    sk_labels = kmeans.predict(x)
+    assert((my_labels == sk_labels).all())
+
+    # test centers
+    my_centers = mykmeans.cluster_centers_
+    sk_centers = kmeans.cluster_centers_
+    for i in range(len(sk_centers)):
+        assert((abs(my_centers-sk_centers)<1e-4).all())
 
 def test_seq_blobs_simd():
     x, initCluster, max_iter = blobs_setup()
@@ -62,7 +89,20 @@ def test_seq_blobs_simd():
     mykmeans = myKMeans.kmeans64(4, initCluster, max_iter, 1e-4 ,False, True, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
+
+    # test fit result (loss)
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
+
+    # test label
+    my_labels = mykmeans.predict(x)
+    sk_labels = kmeans.predict(x)
+    assert((my_labels == sk_labels).all())
+
+    # test centers
+    my_centers = mykmeans.cluster_centers_
+    sk_centers = kmeans.cluster_centers_
+    for i in range(len(sk_centers)):
+        assert((abs(my_centers-sk_centers)<1e-4).all())
 
 def test_digits_simd():
     x, initCluster, max_iter = digits_setup_sklearn()
@@ -72,4 +112,18 @@ def test_digits_simd():
     mykmeans = myKMeans.kmeans64(10, initCluster, max_iter, 1e-4 ,False, True, 8)
     mykmeans.fit(x)
     myloss = mykmeans.inertia_
+
+    # test fit result (loss)
     assert(abs(sklearn_loss-myloss) / myloss < 1e-10)
+
+    # test label
+    my_labels = mykmeans.predict(x)
+    sk_labels = kmeans.predict(x)
+    assert((my_labels == sk_labels).all())
+
+    # test centers
+    my_centers = mykmeans.cluster_centers_
+    sk_centers = kmeans.cluster_centers_
+    for i in range(len(sk_centers)):
+        assert((abs(my_centers-sk_centers)<1e-4).all())
+

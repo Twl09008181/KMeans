@@ -38,12 +38,9 @@ void addVecSIMD(float* v1, float *v2, long N){
     v1[i] += v2[i];
   }
 }
-void addVecScalar(double* p1, double *p2, long dim){ 
-  for(long b = 0; b < dim; ++b){ 
-    p1[b]+=p2[b];
-  }
-}
-void addVecScalar(float* p1, float *p2, long dim){ 
+
+template <typename T>
+void addVecScalar(T* p1, T *p2, long dim){ 
   for(long b = 0; b < dim; ++b){ 
     p1[b]+=p2[b];
   }

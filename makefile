@@ -24,6 +24,10 @@ cppTest:build/cppTest
 pyTest:build/kmeans.so
 	PYTHONPATH=build pytest test/kmeansTest.py
 
+speedTest:
+	PYTHONPATH=build ./speedScript.sh
+	
+
 
 clean:
 	rm -r -f build

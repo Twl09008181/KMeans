@@ -38,12 +38,37 @@ public:
     dataSetPtr<T> dsptr = npToCpp(ds);
     kmeansEngine.fit(dsptr);
   }
-  std::vector<size_t> predict(denseArray<T>& ds){
+  py::array_t<size_t> predict(denseArray<T>& ds){
     dataSetPtr<T> dsptr = npToCpp(ds);
-    return kmeansEngine.predict(dsptr);
+    auto labels =  kmeansEngine.predict(dsptr);
+    // return as np array
+    auto nplabels = py::array_t<size_t>(labels.size());
+    py::buffer_info buf = nplabels.request();
+    size_t *ptr = static_cast<size_t *>(buf.ptr);
+    for(size_t i = 0; i < labels.size(); ++i){
+      ptr[i] = labels[i];
+    }
+    return nplabels;
   }
   double inertia(){return kmeansEngine._inertia;};
-  std::vector<std::vector<T>> cluster_centers(){return kmeansEngine._cluster_centers;}
+  py::array_t<T> cluster_centers()
+  { 
+    auto centers = kmeansEngine._cluster_centers;
+    int k = centers.size();
+    int dim = centers[0].size();
+    // return as np array
+    py::array_t<T> npCenters = py::array_t<T>(centers.size()*centers[0].size());
+    py::buffer_info buf = npCenters.request();
+    T*ptr = static_cast<T *>(buf.ptr);
+    for(size_t c = 0; c < k;++c){
+      for(size_t d = 0; d < dim; ++d){
+        ptr[c*centers[0].size()+d] = centers[c][d];
+      }
+    }
+
+    npCenters.resize({k, dim});
+    return npCenters;
+  }
 private:
   kmeans<T> kmeansEngine;
 

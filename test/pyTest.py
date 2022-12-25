@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import load_digits
 from sklearn.datasets import make_blobs
 
+def warn(*arg, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
 
 def blobs_setup():
     # let mykmeans and sklearn-kmeans has same initial centorids

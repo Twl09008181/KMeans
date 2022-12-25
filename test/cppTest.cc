@@ -21,17 +21,21 @@ int main(int argc,char*argv[]){
       kmeans<T> kms(k,300,1e-4,false, false, threadNum);
       kms.fit(mnistPtr);
       auto centers = kms._cluster_centers;
+      auto labels = kms.predict(mnistPtr);
       auto end = chrono::steady_clock::now();
       std::cout<<"non-simd"<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"ms\n";
       std::cout<<"inertia:"<<kms._inertia<<"\n";
       kmeans<T> kmsSimd(k,300,1e-4,false, true, threadNum);
       start = chrono::steady_clock::now();
       kmsSimd.fit(mnistPtr);
+      auto centersSimd = kmsSimd._cluster_centers;
+      auto labelsSimd = kmsSimd.predict(mnistPtr);
       end = chrono::steady_clock::now();
       std::cout<<"simd"<<chrono::duration_cast<chrono::milliseconds>(end - start).count()<<"ms\n";
       std::cout<<"inertia:"<<kmsSimd._inertia<<"\n";
-      auto centersSimd = kmsSimd._cluster_centers;
 
+      for(size_t i = 0; i < mnist.num; ++i)
+        assert(labels[i]==labelsSimd[i]);
 
       size_t diff = 0;
       for(size_t c = 0; c < k; ++c){
